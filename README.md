@@ -40,7 +40,7 @@ Built entirely from scratch using modern Android development practices (Kotlin +
 
 | Supported Devices | Latest News | My Device |
 | :---: | :---: | :---: |
-| <img src="https://github.com/user-attachments/assets/e7ace05e-d9e0-4d02-9a75-5b5e1043931a" width="250"> | <img src="https://github.com/user-attachments/assets/0392e551-3050-4913-b62a-9cc189688fbb" width="250"> | <img src="https://github.com/user-attachments/assets/995eacab-48f7-4edc-a53a-9e2f91380b1f" width="250"> |
+| <img src="https://github.com/user-attachments/assets/995eacab-48f7-4edc-a53a-9e2f91380b1f" width="250"> | <img src="https://github.com/user-attachments/assets/e7ace05e-d9e0-4d02-9a75-5b5e1043931a" width="250"> | <img src="https://github.com/user-attachments/assets/0392e551-3050-4913-b62a-9cc189688fbb" width="250"> |
 
 *(Screenshots to be added)*
 
