@@ -4,18 +4,22 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.ui.unit.sp
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import kotlinx.coroutines.launch
@@ -38,12 +42,19 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppController() {
-	LineageMainScreen()
+	var showLogcat by remember { mutableStateOf(false) }
+	Crossfade(targetState = showLogcat, label = "LogcatTransition") { isLogcat ->
+		if (isLogcat) {
+			LogcatScreen(onBack = { showLogcat = false })
+		} else {
+			LineageMainScreen(onOpenLogcat = { showLogcat = true })
+		}
+	}
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LineageMainScreen() {
+fun LineageMainScreen(onOpenLogcat: () -> Unit) {
 	val lineageColor = Color(0xFF167C80)
 	val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
 	val coroutineScope = rememberCoroutineScope()
@@ -82,6 +93,17 @@ fun LineageMainScreen() {
 						)
 					)
 				}
+			}
+		},
+
+		floatingActionButton = {
+			FloatingActionButton(
+				onClick = onOpenLogcat,
+				containerColor = lineageColor,
+				contentColor = Color.White,
+				shape = RoundedCornerShape(16.dp)
+			) {
+				Icon(Icons.Filled.BugReport, contentDescription = "Open Logcat")
 			}
 		}
 	) { innerPadding ->

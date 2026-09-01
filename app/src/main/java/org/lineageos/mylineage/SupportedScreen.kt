@@ -70,7 +70,7 @@ fun SupportedScreen() {
                     list.add(DeviceInfo(model, name, brand, type, true))
                 }
             } catch (e: Exception) {
-                android.util.Log.e("DevicesParser", "Ошибка: ${e.message}")
+                android.util.Log.e("DevicesParser", "Error: ${e.message}")
             }
             list
         }
@@ -81,7 +81,10 @@ fun SupportedScreen() {
     val filteredDevices = remember(allDevices, selectedCategory, searchQuery, sortAZ) {
         var res = allDevices.filter { device ->
             val matchesCategory = selectedCategory == 0 || device.type == categories[selectedCategory]
-            val matchesSearch = device.name.contains(searchQuery, ignoreCase = true) || device.brand.contains(searchQuery, ignoreCase = true)
+            val fullDeviceString = "${device.brand} ${device.name} ${device.model}"
+            val matchesSearch = searchQuery.split(" ").all { word ->
+                fullDeviceString.contains(word, ignoreCase = true)
+            }
             matchesCategory && matchesSearch
         }
         res = if (sortAZ) res.sortedBy { it.brand + it.name } else res.sortedByDescending { it.brand + it.name }
@@ -108,7 +111,6 @@ fun SupportedScreen() {
                     unfocusedBorderColor = Color.Gray.copy(alpha = 0.3f)
                 )
             )
-
             Box {
                 OutlinedButton(
                     onClick = { filterExpanded = true },
@@ -211,7 +213,6 @@ fun SupportedScreen() {
                                 Text(device.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                 Text("${device.brand} (${device.model})", color = Color.Gray, fontSize = 14.sp)
                                 Spacer(modifier = Modifier.height(8.dp))
-
                                 Box(
                                     modifier = Modifier
                                         .background(officialColor.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
