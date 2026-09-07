@@ -12,17 +12,57 @@ import android.os.SystemClock
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Android
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.Camera
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DeveloperBoard
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Screenshot
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.outlined.Audiotrack
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.VideoLibrary
+import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +77,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.outlined.Settings
 
 enum class DeviceScreenState { MAIN, STORAGE, BATTERY, UPTIME }
 
@@ -80,12 +121,7 @@ fun MainDeviceContent(onStorageClick: () -> Unit, onBatteryClick: () -> Unit, on
 	var lineageVersion by remember { mutableStateOf("Fetching...") }
 	LaunchedEffect(Unit) {
 		kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-			val propsToTry = listOf(
-				"ro.lineage.display.version",
-				"ro.lineage.build.version",
-				"ro.modversion",
-				"ro.build.display.id"
-			)
+			val propsToTry = listOf("ro.lineage.display.version", "ro.lineage.build.version", "ro.modversion", "ro.build.display.id")
 			var foundVersion = "LineageOS (Unknown)"
 			for (prop in propsToTry) {
 				try {
@@ -95,22 +131,25 @@ fun MainDeviceContent(onStorageClick: () -> Unit, onBatteryClick: () -> Unit, on
 						foundVersion = out
 						break
 					}
-				} catch (e: Exception) {
-				}
+				} catch (e: Exception) {}
 			}
-
-			foundVersion = foundVersion.replace(" dev-keys", "")
-				.replace(" release-keys", "")
-				.replace(" test-keys", "")
+			foundVersion = foundVersion.replace(" dev-keys", "").replace(" release-keys", "").replace(" test-keys", "")
 			if (!foundVersion.contains("lineage", ignoreCase = true) && foundVersion != "LineageOS (Unknown)") {
 				foundVersion = "LineageOS ($foundVersion)"
 			}
-
 			lineageVersion = foundVersion
 		}
 	}
 
 	val processor = Build.HARDWARE.uppercase()
+	val displayMetrics = context.resources.displayMetrics
+	val screenRes = "${displayMetrics.widthPixels} x ${displayMetrics.heightPixels}"
+	val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as android.hardware.camera2.CameraManager
+	val cameraCount = try { cameraManager.cameraIdList.size } catch (e: Exception) { 0 }
+	val systemLanguage = java.util.Locale.getDefault().displayLanguage.replaceFirstChar { it.uppercase() }
+	val securityPatch = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) Build.VERSION.SECURITY_PATCH else "Unknown"
+	val kernelVersion = System.getProperty("os.version") ?: "Unknown"
+	val board = Build.BOARD.uppercase()
 	Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
 		Text("My Device", fontSize = 28.sp, fontWeight = FontWeight.Bold)
 		Text("Everything about your device", fontSize = 14.sp, color = Color.Gray)
@@ -146,7 +185,7 @@ fun MainDeviceContent(onStorageClick: () -> Unit, onBatteryClick: () -> Unit, on
 					}
 
 					Spacer(modifier = Modifier.height(12.dp))
-					Text(String.format("%.1f GB", usedGb), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+					Text(String.format("%.1f GB", usedGb), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = lineageColor)
 					Text(String.format("of %.1f GB", totalGb), fontSize = 12.sp, color = Color.Gray)
 					Spacer(modifier = Modifier.height(8.dp))
 					LinearProgressIndicator(progress = { storageProgress }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)), color = lineageColor, trackColor = lineageColor.copy(alpha = 0.2f), strokeCap = StrokeCap.Round)
@@ -179,6 +218,7 @@ fun MainDeviceContent(onStorageClick: () -> Unit, onBatteryClick: () -> Unit, on
 						Spacer(modifier = Modifier.width(8.dp))
 						Text("Temperature", fontSize = 14.sp, fontWeight = FontWeight.Medium)
 					}
+
 					Spacer(modifier = Modifier.height(8.dp))
 					Text("$tempC °C", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE57373))
 				}
@@ -191,6 +231,7 @@ fun MainDeviceContent(onStorageClick: () -> Unit, onBatteryClick: () -> Unit, on
 						Spacer(modifier = Modifier.width(8.dp))
 						Text("Uptime", fontSize = 14.sp, fontWeight = FontWeight.Medium)
 					}
+
 					Spacer(modifier = Modifier.height(8.dp))
 					Text("${hours}h ${minutes}m", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = lineageColor)
 				}
@@ -207,7 +248,19 @@ fun MainDeviceContent(onStorageClick: () -> Unit, onBatteryClick: () -> Unit, on
 				HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp), color = Color.Gray.copy(alpha = 0.2f))
 				SystemListItem(icon = Icons.Filled.Android, title = "Android ${Build.VERSION.RELEASE}", subtitle = "Android Version", color = Color(0xFF3DDC84))
 				HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp), color = Color.Gray.copy(alpha = 0.2f))
+				SystemListItem(icon = Icons.Filled.Security, title = securityPatch, subtitle = "Security Patch", color = lineageColor)
+				HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp), color = Color.Gray.copy(alpha = 0.2f))
+				SystemListItem(icon = Icons.Filled.Terminal, title = kernelVersion, subtitle = "Kernel Version", color = lineageColor)
+				HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp), color = Color.Gray.copy(alpha = 0.2f))
 				SystemListItem(icon = Icons.Filled.Memory, title = processor, subtitle = "Processor", color = lineageColor)
+				HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp), color = Color.Gray.copy(alpha = 0.2f))
+				SystemListItem(icon = Icons.Filled.DeveloperBoard, title = board, subtitle = "Motherboard", color = lineageColor)
+				HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp), color = Color.Gray.copy(alpha = 0.2f))
+				SystemListItem(icon = Icons.Filled.Screenshot, title = screenRes, subtitle = "Screen Resolution", color = lineageColor)
+				HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp), color = Color.Gray.copy(alpha = 0.2f))
+				SystemListItem(icon = Icons.Filled.Camera, title = "$cameraCount Lenses", subtitle = "Camera Modules", color = lineageColor)
+				HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp), color = Color.Gray.copy(alpha = 0.2f))
+				SystemListItem(icon = Icons.Filled.Language, title = systemLanguage, subtitle = "System Language", color = lineageColor)
 			}
 		}
 
@@ -222,6 +275,12 @@ fun DeviceStorageScreen(onBack: () -> Unit) {
 	val cardBg = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
 	val stat = StatFs(Environment.getDataDirectory().path)
 	val totalGb = stat.totalBytes / (1024f * 1024f * 1024f)
+	val systemGb = remember(totalGb) {
+		val standardCapacities = listOf(16f, 32f, 64f, 128f, 256f, 512f, 1024f)
+		val physicalGb = standardCapacities.firstOrNull { it > totalGb } ?: totalGb
+		(physicalGb - totalGb).coerceAtLeast(1.5f)
+	}
+
 	val usedGb = (stat.totalBytes - stat.availableBytes) / (1024f * 1024f * 1024f)
 	val storagePercent = if (stat.totalBytes > 0) ((stat.totalBytes - stat.availableBytes).toFloat() / stat.totalBytes.toFloat()) * 100 else 0f
 	val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -230,6 +289,68 @@ fun DeviceStorageScreen(onBack: () -> Unit) {
 	val totalRamGb = mi.totalMem / (1024f * 1024f * 1024f)
 	val usedRamGb = (mi.totalMem - mi.availMem) / (1024f * 1024f * 1024f)
 	val ramPercent = if (mi.totalMem > 0) ((mi.totalMem - mi.availMem).toFloat() / mi.totalMem.toFloat()) * 100 else 0f
+	val mediaPerms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+		arrayOf(android.Manifest.permission.READ_MEDIA_IMAGES, android.Manifest.permission.READ_MEDIA_VIDEO, android.Manifest.permission.READ_MEDIA_AUDIO)
+	} else {
+		arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+	}
+
+	var hasMediaPerms by remember { mutableStateOf(mediaPerms.all { context.checkSelfPermission(it) == android.content.pm.PackageManager.PERMISSION_GRANTED }) }
+	val mediaLauncher = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()) { perms ->
+		hasMediaPerms = perms.values.all { it }
+	}
+
+	val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+	var hasUsageAccess by remember {
+		mutableStateOf(
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+				appOps.unsafeCheckOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.packageName) == android.app.AppOpsManager.MODE_ALLOWED
+			} else {
+				appOps.checkOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.packageName) == android.app.AppOpsManager.MODE_ALLOWED
+			}
+		)
+	}
+
+	androidx.compose.runtime.DisposableEffect(context) {
+		val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+			if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+				hasUsageAccess = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+					appOps.unsafeCheckOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.packageName) == android.app.AppOpsManager.MODE_ALLOWED
+				} else {
+					appOps.checkOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.packageName) == android.app.AppOpsManager.MODE_ALLOWED
+				}
+			}
+		}
+
+		val lifecycle = (context as? androidx.activity.ComponentActivity)?.lifecycle
+		lifecycle?.addObserver(observer)
+		onDispose { lifecycle?.removeObserver(observer) }
+	}
+
+	var imagesGb by remember { mutableStateOf(0f) }
+	var videoGb by remember { mutableStateOf(0f) }
+	var audioGb by remember { mutableStateOf(0f) }
+	var appsGb by remember { mutableStateOf(0f) }
+	LaunchedEffect(hasMediaPerms) {
+		if (hasMediaPerms) {
+			kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+				imagesGb = getMediaSizeGb(context, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+				videoGb = getMediaSizeGb(context, android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+				audioGb = getMediaSizeGb(context, android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI)
+			}
+		}
+	}
+
+	LaunchedEffect(hasUsageAccess) {
+		if (hasUsageAccess) {
+			kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+					appsGb = getAppsSizeGb(context)
+				}
+			}
+		}
+	}
+
 	Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
 		ScreenHeader(title = "Storage & Memory", onBack = onBack)
 		Spacer(modifier = Modifier.height(24.dp))
@@ -239,24 +360,106 @@ fun DeviceStorageScreen(onBack: () -> Unit) {
 		Spacer(modifier = Modifier.height(32.dp))
 		Text("Categories", fontSize = 18.sp, fontWeight = FontWeight.Bold)
 		Spacer(modifier = Modifier.height(16.dp))
+		androidx.compose.animation.AnimatedVisibility(visible = !hasMediaPerms) {
+			Card(
+				modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).clickable { mediaLauncher.launch(mediaPerms) },
+				shape = RoundedCornerShape(20.dp),
+				colors = CardDefaults.cardColors(containerColor = lineageColor.copy(alpha = 0.1f))
+			) {
+				Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+					Icon(Icons.Outlined.WarningAmber, contentDescription = null, tint = lineageColor)
+					Spacer(modifier = Modifier.width(12.dp))
+					Column(modifier = Modifier.weight(1f)) {
+						Text("Grant Media Access", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = lineageColor)
+						Text("Required to scan photo and video sizes", fontSize = 12.sp, color = lineageColor.copy(alpha = 0.8f))
+					}
+					Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = lineageColor)
+				}
+			}
+		}
+
+		androidx.compose.animation.AnimatedVisibility(visible = !hasUsageAccess) {
+			Card(
+				modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp).clickable {
+					context.startActivity(Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
+				},
+				shape = RoundedCornerShape(20.dp),
+				colors = CardDefaults.cardColors(containerColor = lineageColor.copy(alpha = 0.1f))
+			) {
+				Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+					Icon(Icons.Outlined.Settings, contentDescription = null, tint = lineageColor)
+					Spacer(modifier = Modifier.width(12.dp))
+					Column(modifier = Modifier.weight(1f)) {
+						Text("Grant Usage Access", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = lineageColor)
+						Text("Required to calculate app sizes", fontSize = 12.sp, color = lineageColor.copy(alpha = 0.8f))
+					}
+
+					Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = lineageColor)
+				}
+			}
+		}
+
 		Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = cardBg)) {
 			Column(modifier = Modifier.padding(16.dp)) {
-				StorageCategoryItem(Icons.Filled.Apps, "Coming soon", "??,?? GB", 0.1f, lineageColor)
-				StorageCategoryItem(Icons.Outlined.Delete, "Coming soon", "??,?? GB", 0.10f, lineageColor)
-				StorageCategoryItem(Icons.Outlined.Folder, "Coming soon", "??,?? GB", 0.20f, lineageColor)
-				StorageCategoryItem(Icons.Outlined.VideoLibrary, "Coming soon", "??,?? GB", 0.30f, lineageColor)
-				StorageCategoryItem(Icons.Outlined.Image, "Coming soon", "??,?? GB", 0.40f, lineageColor)
-				StorageCategoryItem(Icons.Outlined.Audiotrack, "Coming soon", "??,?? MB", 0.50f, lineageColor)
+				if (hasMediaPerms) {
+					StorageCategoryItem(Icons.Outlined.Image, "Images", String.format("%.2f GB", imagesGb), (imagesGb / totalGb).coerceAtMost(1f), lineageColor)
+					StorageCategoryItem(Icons.Outlined.VideoLibrary, "Videos", String.format("%.2f GB", videoGb), (videoGb / totalGb).coerceAtMost(1f), lineageColor)
+					StorageCategoryItem(Icons.Outlined.Audiotrack, "Audio", String.format("%.2f GB", audioGb), (audioGb / totalGb).coerceAtMost(1f), lineageColor)
+					Spacer(modifier = Modifier.height(16.dp))
+					HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
+					Spacer(modifier = Modifier.height(16.dp))
+				}
+
+				if (hasUsageAccess) {
+					StorageCategoryItem(Icons.Filled.Apps, "Apps & Games", String.format("%.2f GB", appsGb), (appsGb / totalGb).coerceAtMost(1f), lineageColor)
+				} else {
+					StorageCategoryItem(Icons.Filled.Apps, "Apps & Games", "Requires Access", 0f, Color.Gray)
+				}
+
 				Spacer(modifier = Modifier.height(16.dp))
 				HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
 				Spacer(modifier = Modifier.height(16.dp))
 				Text("System", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
 				Spacer(modifier = Modifier.height(8.dp))
-				StorageCategoryItem(Icons.Filled.Android, "Android ${Build.VERSION.RELEASE}", "??,?? GB", 0.8f, Color(0xFF3DDC84))
+				StorageCategoryItem(Icons.Filled.Android, "Android ${Build.VERSION.RELEASE}", String.format("%.1f GB", systemGb), (systemGb / (totalGb + systemGb)).coerceAtMost(1f), Color(0xFF3DDC84))
 			}
 		}
-		Spacer(modifier = Modifier.height(32.dp))
+
+		Spacer(modifier = Modifier.height(80.dp))
 	}
+}
+
+fun getMediaSizeGb(context: Context, uri: android.net.Uri): Float {
+	var sizeBytes = 0L
+	try {
+		val cursor = context.contentResolver.query(uri, arrayOf(android.provider.MediaStore.MediaColumns.SIZE), null, null, null)
+		cursor?.use {
+			val sizeCol = it.getColumnIndexOrThrow(android.provider.MediaStore.MediaColumns.SIZE)
+			while (it.moveToNext()) {
+				sizeBytes += it.getLong(sizeCol)
+			}
+		}
+	} catch (e: Exception) {}
+	return sizeBytes / (1024f * 1024f * 1024f)
+}
+
+@androidx.annotation.RequiresApi(android.os.Build.VERSION_CODES.O)
+fun getAppsSizeGb(context: Context): Float {
+	if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return 0f
+	var sizeBytes = 0L
+	try {
+		val storageStatsManager = context.getSystemService(Context.STORAGE_STATS_SERVICE) as android.app.usage.StorageStatsManager
+		val pm = context.packageManager
+		val packages = pm.getInstalledPackages(0)
+		for (pkg in packages) {
+			try {
+				val uid = pkg.applicationInfo?.uid ?: continue
+				val stats = storageStatsManager.queryStatsForUid(android.os.storage.StorageManager.UUID_DEFAULT, uid)
+				sizeBytes += stats.appBytes + stats.dataBytes + stats.cacheBytes
+			} catch (e: Exception) {}
+		}
+	} catch (e: Exception) {}
+	return sizeBytes / (1024f * 1024f * 1024f)
 }
 
 @Composable
@@ -525,7 +728,5 @@ fun SystemListItem(
 			Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold)
 			Text(subtitle, fontSize = 12.sp, color = Color.Gray)
 		}
-
-		Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = Color.Gray)
 	}
 }
